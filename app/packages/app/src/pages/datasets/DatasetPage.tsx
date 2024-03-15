@@ -2,6 +2,7 @@ import { Dataset, Snackbar, Starter } from "@fiftyone/core";
 import "@fiftyone/embeddings";
 import "@fiftyone/looker-3d";
 import "@fiftyone/map";
+import "@fiftyone/dashboards";
 import { OperatorCore } from "@fiftyone/operators";
 import "@fiftyone/relay";
 import * as fos from "@fiftyone/state";

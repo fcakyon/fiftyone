@@ -2630,6 +2630,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@fiftyone/dashboards@workspace:packages/dashboards":
+  version: 0.0.0-use.local
+  resolution: "@fiftyone/dashboards@workspace:packages/dashboards"
+  dependencies:
+    "@babel/preset-typescript": ^7.17.12
+    "@fiftyone/utilities": "workspace:^"
+    "@types/react": ^18.0.12
+    jest: ^28.1.1
+    prettier: 2.2.1
+    typescript: 4.2.4
+    vite: ^3.2.8
+  languageName: unknown
+  linkType: soft
+
 "@fiftyone/embeddings@workspace:packages/embeddings":
   version: 0.0.0-use.local
   resolution: "@fiftyone/embeddings@workspace:packages/embeddings"

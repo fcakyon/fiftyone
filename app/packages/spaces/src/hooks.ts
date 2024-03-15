@@ -145,6 +145,22 @@ export function usePanelState<T>(
 }
 
 /**
+ * Set the state for the given panel by id.
+ *
+ * @param local
+ * @returns `updateState(panelId: string, newState: T)`
+ */
+export function useSetPanelState<T>(local?: boolean) {
+  return useRecoilCallback(
+    ({ set }) =>
+      (panelId: string, newState: T) => {
+        set(panelStateSelector({ panelId, local }), newState);
+      },
+    [local]
+  );
+}
+
+/**
  * Can only be used within a panel component
  */
 export function usePanelStateCallback<T>(

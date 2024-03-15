@@ -1,7 +1,9 @@
 import {
   Layout,
   SpaceNode,
+  usePanelState,
   usePanels,
+  useSetPanelState,
   useSpaceNodes,
   useSpaces,
 } from "@fiftyone/spaces";
@@ -19,6 +21,7 @@ import {
   listLocalAndRemoteOperators,
 } from "./operators";
 import { useShowOperatorIO } from "./state";
+import { useState } from "react";
 
 //
 // BUILT-IN OPERATORS
@@ -729,6 +732,110 @@ class ClearSelectedLabels extends Operator {
   }
 }
 
+class ChoosePanelOperator extends Operator {
+  get config(): OperatorConfig {
+    return new OperatorConfig({
+      name: "choose_panel_operator",
+      label: "Choose panel operator",
+      unlisted: true,
+      dynamic: true,
+    });
+  }
+  useHooks(ctx: ExecutionContext): {} {
+    console.log(ctx.params.panelId);
+    const [panelState, setPanelState] = usePanelState({}, ctx.params.panelId);
+    return {
+      setOperatorForPanel(uri) {
+        console.log("setPanelState", uri);
+        setPanelState({ operator: uri });
+      },
+    };
+  }
+  async resolveInput(ctx: ExecutionContext): Promise<types.Property> {
+    const inputs = new types.Object();
+    const choices = new types.AutocompleteView();
+    const { allOperators } = listLocalAndRemoteOperators();
+    for (const operator of allOperators) {
+      choices.addChoice(operator.uri, {
+        label: operator.label,
+        description: operator.uri,
+      });
+    }
+    inputs.str("panelId", { required: true });
+    inputs.defineProperty("operator", new types.Enum(choices.values()), {
+      label: "Operator",
+      view: choices,
+    });
+    return new types.Property(inputs);
+  }
+  async execute({ params, hooks }: ExecutionContext) {
+    hooks.setOperatorForPanel(params.operator);
+  }
+}
+
+class ShowPanelOutput extends Operator {
+  get config(): OperatorConfig {
+    return new OperatorConfig({
+      name: "show_panel_output",
+      label: "Show panel output",
+      unlisted: true,
+    });
+  }
+  useHooks(ctx: ExecutionContext): {} {
+    console.log(ctx.params);
+    const updatePanelState = useSetPanelState();
+    return {
+      setPanelState(panel_id, state) {
+        updatePanelState(panel_id, (c) => ({ ...c, ...state }));
+      },
+    };
+  }
+  async resolveInput(ctx: ExecutionContext): Promise<types.Property> {
+    const inputs = new types.Object();
+    inputs.str("panel_id", { required: true });
+    inputs.obj("outputs", { required: true });
+    inputs.obj("data", { required: true });
+    return new types.Property(inputs);
+  }
+  async execute({ params, hooks }: ExecutionContext) {
+    hooks.setPanelState(params.panel_id, {
+      to_render: {
+        outputs: params.outputs,
+        data: params.data,
+      },
+    });
+  }
+}
+
+class SetPanelParams extends Operator {
+  get config(): OperatorConfig {
+    return new OperatorConfig({
+      name: "set_panel_params",
+      label: "Set panel params",
+      unlisted: true,
+    });
+  }
+  useHooks(ctx: ExecutionContext): {} {
+    const updatePanelState = useSetPanelState();
+    return {
+      setPanelState(panel_id, state) {
+        updatePanelState(panel_id, (c) => ({ ...c, ...state }));
+      },
+    };
+  }
+  async resolveInput(ctx: ExecutionContext): Promise<types.Property> {
+    const inputs = new types.Object();
+    inputs.str("panel_id", { required: true });
+    inputs.obj("params", { required: true });
+    return new types.Property(inputs);
+  }
+  async execute({ params, hooks }: ExecutionContext) {
+    hooks.setPanelState(params.panel_id, {
+      params: params.params,
+    });
+  }
+}
+
 export function registerBuiltInOperators() {
   try {
     _registerBuiltInOperator(CopyViewAsJSON);
@@ -758,6 +865,9 @@ export function registerBuiltInOperators() {
     _registerBuiltInOperator(SplitPanel);
     _registerBuiltInOperator(SetSelectedLabels);
     _registerBuiltInOperator(ClearSelectedLabels);
+    _registerBuiltInOperator(ChoosePanelOperator);
+    _registerBuiltInOperator(ShowPanelOutput);
+    _registerBuiltInOperator(SetPanelParams);
   } catch (e) {
     console.error("Error registering built-in operators");
     console.error(e);

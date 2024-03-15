@@ -61,13 +61,13 @@ export const usePromptOperatorInput = () => {
   );
   const setPromptingOperator = useSetRecoilState(promptingOperatorState);
 
-  const prompt = (operatorName) => {
+  const prompt = (operatorName, params = {}) => {
     setRecentlyUsedOperators((recentlyUsedOperators) => {
       const update = new Set([...recentlyUsedOperators, operatorName]);
       return Array.from(update).slice(-5);
     });
 
-    setPromptingOperator({ operatorName, params: {} });
+    setPromptingOperator({ operatorName, params });
   };
 
   return prompt;
@@ -181,7 +181,9 @@ const useOperatorPromptSubmitOptions = (operatorURI, execDetails, execute) => {
   const availableOrchestrators =
     execDetails.executionOptions?.availableOrchestrators || [];
   const hasAvailableOrchestators = availableOrchestrators.length > 0;
-  const executionOptions = execDetails.executionOptions || {};
+  const executionOptions = execDetails.executionOptions || {
+    allowImmediateExecution: true,
+  };
   const defaultToExecute = executionOptions.allowDelegatedExecution
     ? !executionOptions.defaultChoiceToDelegated
     : true;
@@ -852,6 +854,7 @@ export function useOperatorExecutor(uri, handlers: any = {}) {
       ctx.state = state;
       ctx.delegationTarget = delegationTarget;
       ctx.requestDelegation = requestDelegation;
+      let executionResult = null;
       try {
         ctx.hooks = hooks;
         ctx.state = state;
@@ -861,6 +864,7 @@ export function useOperatorExecutor(uri, handlers: any = {}) {
         setError(result.error);
         setIsDelegated(result.delegated);
         handlers.onSuccess?.(result);
+        executionResult = result;
       } catch (e) {
         const isAbortError =
           e.name === "AbortError" || e instanceof DOMException;
@@ -874,6 +878,7 @@ export function useOperatorExecutor(uri, handlers: any = {}) {
       }
       setHasExecuted(true);
       setIsExecuting(false);
+      return executionResult;
     },
     [ctx]
   );
