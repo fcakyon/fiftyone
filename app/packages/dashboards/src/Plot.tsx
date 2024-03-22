@@ -5,7 +5,9 @@ import {
   usePromptOperatorInput,
 } from "@fiftyone/operators/src/state";
 import { usePanelState } from "@fiftyone/spaces";
+import { useAssertedRecoilValue } from "@fiftyone/state";
 import { useEffect, useState } from "react";
+import * as fos from "@fiftyone/state";
 
 function createRandomPanelId() {
   return Math.random().toString(36).substring(7);
@@ -27,7 +29,13 @@ function ActualPlotPanel({ panelId, dimensions }) {
   const forceRerender = () => {
     setPanelState((c) => ({ ...c, r: Math.random() }));
   };
-  const promptForOperator = usePromptOperatorInput();
+  const onExecute = (ctx, params) => {
+    setPanelState((c) => {
+      c = c || {};
+      return { ...c, params: { ...(c.params || {}), ...params } };
+    });
+  };
+  const promptForOperator = usePromptOperatorInput(onExecute);
   const [panelState, setPanelState] = usePanelState({}, panelId);
   const handleChooseOperator = () => {
     promptForOperator("@voxel51/operators/choose_panel_operator", {
@@ -46,6 +54,7 @@ function ActualPlotPanel({ panelId, dimensions }) {
     promptForOperator(op, { panel_id: panelId, plot_type: plot_type });
   };
   const needsOperator = !panelState.operator;
+  console.log({ dimensions });
   return (
     <div style={{ width: "100%", height: "100%" }}>
       {needsOperator && <Button onClick={handleBuildPlot()}>Build Plot</Button>}
@@ -59,20 +68,27 @@ function ActualPlotPanel({ panelId, dimensions }) {
         <Button onClick={handleConfigure}>Configure Panel</Button>
       )}
       {/* <Button onClick={forceRerender}>Force Rerender (For Testing Only)</Button> */}
-      {panelState.operator && <PlotRenderer {...panelState} />}
+      {panelState.operator && (
+        <PlotRenderer {...panelState} {...dimensions.bounds} />
+      )}
       {/* <pre>{JSON.stringify(panelState, null, 2)}</pre> */}
     </div>
   );
 }
 
-function PlotRenderer({ operator, to_render, params }) {
+function PlotRenderer({ operator, to_render, params, height, width }) {
+  const view = useAssertedRecoilValue(fos.view);
+  const filters = useAssertedRecoilValue(fos.filters);
+  // to account for the height of the buttons (should remove)
+  height = height - 60;
   useEffect(() => {
-    const onLoad = async () => {
-      executeOperator(operator, { panel_id: "plot", ...(params || {}) });
-    };
-
-    onLoad();
-  }, []);
+    console.log({
+      view,
+      filters,
+      params,
+    });
+    executeOperator(operator, { panel_id: "plot", ...(params || {}) });
+  }, [view, filters]);
 
   if (to_render) {
     const schema = types.Property.fromJSON(to_render.outputs);
@@ -87,6 +103,8 @@ function PlotRenderer({ operator, to_render, params }) {
                 item: true,
                 spacing: 0,
                 sx: { pl: 0 },
+                height,
+                width,
               },
             },
           },

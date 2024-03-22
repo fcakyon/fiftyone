@@ -9,10 +9,13 @@ import { usePanelState } from "@fiftyone/spaces";
 import { executeOperator } from "@fiftyone/operators";
 
 export default function PlotlyView(props) {
+  console.log(props);
   const { data, schema } = props;
   const { view = {} } = schema;
   const { config = {}, layout = {} } = view;
   const theme = useTheme();
+  const [selectedpoints, setSelectedPoints] = React.useState(null);
+  let range = [0, 0];
   const handleEvent = (event?: string) => (e) => {
     if (view.controller) {
       // TODO: add more interesting/useful event data
@@ -20,23 +23,49 @@ export default function PlotlyView(props) {
       console.log("event_data", e);
       const data = EventDataMappers[event]?.(e) || {};
       const x_data_source = view.x_data_source;
+      if (event === "onClick") {
+        const values = e.points[0];
+        let selected = [];
+        let xBinsSize = null;
+        let xValue = null;
+        for (const p of e.points) {
+          const { data, fullData } = p;
+          const { x, y } = data;
+          xBinsSize = fullData.xbins.size;
+          selected = selected.concat(p.pointIndices);
+          xValue = p.x;
+        }
+        //
+        // TODO: histogram only
+        //
+        range = [xValue - xBinsSize / 2, xValue + xBinsSize / 2];
+        console.log("range", range);
+        if (selected.length === 0) {
+          selected = null;
+        }
+        setSelectedPoints(selected);
+      }
       executeOperator(view.controller, {
         event,
         panel_id: view.panel_id,
         data,
         x_data_source,
+        range,
       });
     }
   };
   const eventHandlers = createPlotlyHandlers(handleEvent);
 
+  const dataDefaults = {
+    selectedpoints,
+  };
   const layoutDefaults = {
     // dragmode: "lasso",
     // uirevision: 1,
     font: { family: "var(--fo-fontFamily-body)", size: 14 },
     showlegend: false,
     // width: "100%",
-    // height: "100%",
+    // height: 700,
     // hovermode: false,
     xaxis: {
       showgrid: true,
@@ -67,17 +96,14 @@ export default function PlotlyView(props) {
   };
   const configDefaults = {
     displaylogo: false,
-    // scrollZoom: true,
+    scrollZoom: true,
     responsive: true,
     displayModeBar: true,
   };
 
   const mergedLayout = merge({}, layoutDefaults, layout);
   const mergedConfig = merge({}, configDefaults, config);
-
-  function handleSelectionChange() {
-    // invoke operator name in view.onSelectionChange
-  }
+  const mergedData = mergeData(data, dataDefaults);
 
   return (
     <Box
@@ -87,10 +113,8 @@ export default function PlotlyView(props) {
     >
       <HeaderView {...props} nested />
       <Plot
-        data={data}
+        data={mergedData}
         style={{ height: "100%", width: "100%", zIndex: 1 }}
-        onSelected={handleSelectionChange}
-        onDeselect={() => handleSelectionChange()}
         config={mergedConfig}
         layout={mergedLayout}
         {...eventHandlers}
@@ -149,7 +173,15 @@ const EventDataMappers = {
       ...pointdata,
       data: metadata,
     };
-    console.log("event_data!!!!", result);
     return result;
   },
 };
+
+function mergeData(data, defaults) {
+  return (data || []).map((trace) => {
+    return {
+      ...trace,
+      ...defaults,
+    };
+  });
+}

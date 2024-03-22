@@ -55,7 +55,7 @@ export const showOperatorPromptSelector = selector({
   },
 });
 
-export const usePromptOperatorInput = () => {
+export const usePromptOperatorInput = (onExecute?: any) => {
   const setRecentlyUsedOperators = useSetRecoilState(
     recentlyUsedOperatorsState
   );
@@ -67,7 +67,7 @@ export const usePromptOperatorInput = () => {
       return Array.from(update).slice(-5);
     });
 
-    setPromptingOperator({ operatorName, params });
+    setPromptingOperator({ operatorName, params, onExecute });
   };
 
   return prompt;
@@ -405,6 +405,9 @@ export const useOperatorPrompt = () => {
       const { invalid, errors } = await validate(ctx, resolved);
       if (invalid) {
         return;
+      }
+      if (promptingOperator.onExecute) {
+        promptingOperator.onExecute(ctx, promptingOperator.params, options);
       }
       executor.execute(promptingOperator.params, options);
     },
