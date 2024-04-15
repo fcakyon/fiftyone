@@ -7,3 +7,5 @@ export enum OPERATOR_PROMPT_AREAS {
   DRAWER_LEFT = "operator_prompt_area_drawer_left",
   DRAWER_RIGHT = "operator_prompt_area_drawer_right",
 }
+export const REMOTE_OPERATOR_DEFAULT_AUTO_EXECUTE_DELAY = 1000;
+export const LOCAL_OPERATOR_DEFAULT_AUTO_EXECUTE_DELAY = 250;
