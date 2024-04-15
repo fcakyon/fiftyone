@@ -1,6 +1,11 @@
 import { Locator, Page, expect } from "src/oss/fixtures";
 
-export type PanelName = "Samples" | "Histograms" | "Embeddings" | "OperatorIO";
+export type PanelName =
+  | "Samples"
+  | "Histograms"
+  | "Embeddings"
+  | "OperatorIO"
+  | string;
 export class PanelPom {
   readonly page: Page;
   readonly locator: Locator;
