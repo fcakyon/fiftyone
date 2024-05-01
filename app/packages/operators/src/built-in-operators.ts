@@ -859,7 +859,7 @@ function useUpdatePanelStatePartial() {
     targetParam = targetParam || targetPartial;
     setTimeout(() => {
       setPanelStateById(ctx.getCurrentPanelId(), (current) => {
-        const currentCustomPanelState = current[targetPartial] || {};
+        const currentCustomPanelState = current?.[targetPartial] || {};
         let updatedState;
         const param = ctx.params[targetParam];
         if (patch) {
